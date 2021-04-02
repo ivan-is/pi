@@ -1,0 +1,164 @@
+---
+- hosts: PI
+  become: True
+  gather_facts: True
+
+  vars:
+    HOSTNAME: "pi.local"
+    LOCALE: "en_US.UTF-8"
+    TIMEZONE: "Europe/Kiev"
+    ENABLE_CAMERA: True
+    ENABLE_SPI: True
+    ENABLE_SERIAL: True
+    ENABLE_1WIRE: True
+    ENABLE_REMOTE_GPIO: True
+    ENABLE_I2C: False
+    DISABLE_SSH_PASSWD_LOGIN: True
+    AUDIO_OUT: "0" # 0: Auto, 1 Force: 3.5mm, 2 Force: HDMI
+
+  tasks:
+    - name: Update raspi-config
+      become: true
+      apt: name=raspi-config update_cache=yes state=present cache_valid_time=3600
+
+    - name: Change hostname
+      shell: "raspi-config nonint do_hostname {{ HOSTNAME }}"
+
+    - name: Change locale
+      shell: "raspi-config nonint do_change_locale {{ LOCALE }}"
+
+    - name: Change timezone
+      shell: "raspi-config nonint do_change_timezone {{ TIMEZONE }}"
+
+    - name: Get camera status
+      shell: "raspi-config nonint get_camera"
+      register: camera_status
+
+    - name: Print camera status
+      debug:
+        msg: "Camera status is: {{ camera_status.stdout }}"
+
+    - name: Enable Camera
+      shell: "raspi-config nonint do_camera 0"
+      when: (ENABLE_CAMERA == True) and (camera_status.stdout != '0')
+
+    - name: Disable Camera
+      shell: "raspi-config nonint do_camera 1"
+      when: (ENABLE_CAMERA == False) and (camera_status.stdout != '1')
+
+    - name: Get SPI status
+      shell: "raspi-config nonint get_spi"
+      register: spi_status
+      changed_when: False
+
+    - name: Print SPI status
+      debug:
+        msg: "SPI status is: {{ spi_status.stdout }}"
+
+    - name: Enable SPI
+      shell: "raspi-config nonint do_spi 0"
+      when: (ENABLE_SPI == True) and (spi_status.stdout != '0')
+
+    - name: Disable SPI
+      shell: "raspi-config nonint do_spi 1"
+      when: (ENABLE_SPI == False) and (spi_status.stdout != '1')
+
+    - name: Get I2C status
+      shell: "raspi-config nonint get_i2c"
+      register: i2c_status
+      changed_when: False
+
+    - name: Print I2C status
+      debug:
+        msg: "I2C status is: {{ i2c_status.stdout }}"
+
+    - name: Enable I2C
+      shell: "raspi-config nonint do_i2c 0"
+      when: (ENABLE_I2C == True) and (i2c_status.stdout != '0')
+
+    - name: Disable I2C
+      shell: "raspi-config nonint do_i2c 1"
+      when: (ENABLE_I2C == False) and (i2c_status.stdout != '1')
+
+    - name: Get serial status
+      shell: "raspi-config nonint get_serial"
+      register: serial_status
+      changed_when: False
+
+    - name: Get serialHW status
+      shell: "raspi-config nonint get_serial_hw"
+      register: serialhw_status
+      changed_when: False
+
+    - name: Print serial status
+      debug:
+        msg: "Serial status is: {{ serial_status.stdout }}"
+
+    - name: Print serialHW status
+      debug:
+        msg: "SerialHW status is: {{ serialhw_status.stdout }}"
+
+    - name: Enable serial
+      shell: "raspi-config nonint do_serial 0"
+      when: (ENABLE_SERIAL == True) and (serial_status.stdout != '0')
+
+    - name: Disable serial
+      shell: "raspi-config nonint do_serial 1"
+      when: (ENABLE_SERIAL == False) and (serial_status.stdout != '1')
+
+    - name: Get Onewire status
+      shell: "raspi-config nonint get_onewire"
+      register: onewire_status
+      changed_when: False
+
+    - name: Print Onewire status
+      debug:
+        msg: "Onewire status is: {{ onewire_status.stdout }}"
+
+    - name: Enable OneWire
+      shell: "raspi-config nonint do_onewire 0"
+      when: (ENABLE_1WIRE == True) and (onewire_status.stdout != '0')
+
+    - name: Disable OneWire
+      shell: "raspi-config nonint do_onewire 1"
+      when: (ENABLE_1WIRE == False) and (onewire_status.stdout != '1')
+
+    - name: Get rGPIO status
+      shell: "raspi-config nonint get_rgpio"
+      register: rgpio_status
+      changed_when: False
+
+    - name: Print rGPIO status
+      debug:
+        msg: "rGPIO status is: {{ rgpio_status.stdout }}"
+
+    - name: Enable Remote GPIO
+      shell: "raspi-config nonint do_rgpio 0"
+      when: (ENABLE_REMOTE_GPIO == True) and (rgpio_status.stdout != '0')
+
+    - name: Disable Remote GPIO
+      shell: "raspi-config nonint do_rgpio 1"
+      when: (ENABLE_REMOTE_GPIO == False) and (rgpio_status.stdout != '1')
+
+    - name: Check if FS is expandable
+      shell: "raspi-config nonint get_can_expand"
+      register: fs_filled
+      changed_when: False
+
+    - name: Print if FS is expandable or not
+      debug:
+        msg: "Filesystem is expandable! [{{ fs_filled.stdout }}]"
+      when: fs_filled.stdout == '0'
+
+    - name: Expand Filesystem
+      shell: "raspi-config nonint do_expand_rootfs"
+
+    - name: Set audio out
+      shell: "raspi-config nonint do_audio {{ AUDIO_OUT }}"
+
+    - name: Disable password login via SSH
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: ^#?PasswordAuthentication
+        line: "PasswordAuthentication no"
+      when: (DISABLE_SSH_PASSWD_LOGIN == True)

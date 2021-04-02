@@ -1,0 +1,22 @@
+---
+- hosts: PI
+  become: yes
+
+  vars:
+    packages_: [ libffi-dev, libssl-dev, python3, python3-pip, python3-docker, python-pkg-resources, python-setuptools, python3-pkg-resources, python3-setuptools, htop, vim, git-core, nano, curl, mc, screen, software-properties-common, build-essential ]
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ packages_ }}"
+        state: present
+        update_cache: yes
+
+    - name: Install Docker
+      import_role:
+        name: geerlingguy.docker_arm  # installed via `make dev`
+      vars:
+        docker_install_compose: yes
+        docker_users:
+          - pi
+          - root

@@ -1,0 +1,13 @@
+---
+- hosts: PI
+  become: yes
+  gather_facts: yes
+
+  tasks:
+#    - name: stop and remove container
+#      docker_container:
+#        name: pihole
+#        state: absent
+
+    - name: Stop apps
+      shell: "cd /opt/app && docker-compose down --remove-orphans"

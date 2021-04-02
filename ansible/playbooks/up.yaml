@@ -1,0 +1,13 @@
+---
+- hosts: PI
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Copy app/ to PI
+      copy:
+        src: ../../app
+        dest: /opt/
+
+    - name: Start apps
+      shell: "cd /opt/app && docker-compose up --detach"

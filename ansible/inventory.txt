@@ -1,0 +1,6 @@
+[PI]
+192.168.1.13
+
+[PI:vars]
+ansible_user=root
+host_key_checking=False

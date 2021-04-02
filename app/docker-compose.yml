@@ -1,0 +1,61 @@
+version: "3"
+
+services:
+  pihole:
+    hostname: pihole.local
+    container_name: pihole
+    image: pihole/pihole:v5.7
+    dns:
+      - 127.0.0.1
+      - 8.8.8.8
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - '/mnt/volumes/pihole/etc/pihole/:/etc/pihole/'
+      - '/mnt/volumes/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
+    env_file:
+      - credentials.env
+    networks:
+      - pi
+    restart: unless-stopped
+
+  rpi-monitor:
+    hostname: rpi_monitor.local
+    image: michaelmiklis/rpi-monitor:latest
+    container_name: rpi-monitor
+    volumes:
+      - /opt/vc:/opt/vc
+      - /boot:/boot
+      - /sys:/dockerhost/sys:ro
+      - /etc:/dockerhost/etc:ro
+      - /proc:/dockerhost/proc:ro
+      - /usr/lib:/dockerhost/usr/lib:ro
+    devices:
+      - "/dev/vchiq:/dev/vchiq"
+      - "/dev/vcsm-cma:/dev/vcsm"
+    networks:
+      - pi
+    restart: unless-stopped
+    ports:
+      - 8888:8888
+
+  pistats:
+    hostname: pistats.local
+    container_name: pistats
+    build:
+      context: .
+      dockerfile: pistats/Dockerfile
+    ports:
+      - "8088:8000/tcp"
+    networks:
+      - pi
+    depends_on:
+      - rpi-monitor
+    restart: unless-stopped
+
+networks:
+  pi:
+    driver: bridge
